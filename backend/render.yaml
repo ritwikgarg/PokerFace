@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: agent-poker-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && python -m modal deploy app/services/inference_modal.py
+    startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT run:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SUPERMEMORY_API_URL
+        value: https://api.supermemory.ai
+      - key: SUPERMEMORY_API_KEY
+        sync: false  # set manually in dashboard
+      - key: HF_TOKEN
+        sync: false
+      - key: MODAL_TOKEN_ID
+        sync: false
+      - key: MODAL_TOKEN_SECRET
+        sync: false
+    healthCheckPath: /api/health

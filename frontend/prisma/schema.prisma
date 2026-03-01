@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  image          String?
+  githubId       String   @unique
+  githubUsername  String?
+  credits        Int      @default(1000)
+  createdAt      DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agents      Agent[]
+  rooms       Room[]        @relation("HostedRooms")
+  roomPlayers RoomPlayer[]
+  stats       UserStats?
+}
+
+model Agent {
+  id                 String   @id @default(cuid())
+  name               String
+  playStyle          String
+  riskTolerance      Int
+  deception          Int
+  personalityPrompt  String   @default("")
+  baseLLM               String
+  previousGamesHistory  Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Room {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  status    String   @default("waiting") // waiting | playing | finished
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hostId  String
+  host    User         @relation("HostedRooms", fields: [hostId], references: [id])
+  players RoomPlayer[]
+  hands   Hand[]
+}
+
+model RoomPlayer {
+  id     String  @id @default(cuid())
+  chips  Int     @default(1000)
+  seat   Int
+  ready  Boolean @default(false)
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+  agentId String
+  roomId  String
+  room    Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@unique([roomId, seat])
+}
+
+model Hand {
+  id             String   @id @default(cuid())
+  handNumber     Int
+  communityCards String[] // e.g. ["Ah", "Kd", "3c", "7s", "Jh"]
+  potSize        Int
+  winnerId       String?
+  winnerHandRank String?
+  createdAt      DateTime @default(now())
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model UserStats {
+  id         String @id @default(cuid())
+  gamesWon   Int    @default(0)
+  gamesPlayed Int   @default(0)
+  totalProfit Int    @default(0)
+  biggestPot  Int    @default(0)
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
